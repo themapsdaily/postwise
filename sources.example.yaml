@@ -1,0 +1,9 @@
+# Script sources. Copy to sources.yaml. Each command runs on its cron (in TZ)
+# from the repo root and prints a JSON array of drafts to stdout, e.g.
+# [{"caption": "Hello", "media": [{"src": "https://example.com/a.png"}], "at": "2026-12-01T09:00:00Z"}]
+#
+# - id: daily-quote
+#   schedule: "0 8 * * *"
+#   command: node examples/sources/quote.mjs
+#   autoApprove: false        # true books a post straight away, only when the draft has "at"
+#   timeoutSeconds: 120
