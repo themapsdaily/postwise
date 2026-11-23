@@ -51,13 +51,16 @@ export interface Delivery {
   platform: Platform;
   status: DeliveryStatus;
   attempts: number;
-  /** Platform-side id (container id while working, post id once posted). */
+  /** Upload or container id while the platform is still processing; null to start over. */
+  containerId: string | null;
+  /** Platform-side id of the published post. */
   remoteId: string | null;
   /** Public permalink once posted. */
   url: string | null;
   error: string | null;
   /** UTC ISO time of the next retry, when a step failed and attempts remain. */
   retryAt: string | null;
+  publishedAt: string | null;
   updatedAt: string;
 }
 
