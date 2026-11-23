@@ -14,36 +14,38 @@ const MESSAGES: Record<string, string> = {
   handled: "That post was already approved or has been sent.",
 };
 
-const card = { maxWidth: 480, margin: "10vh auto", padding: "1.5rem", border: "1px solid var(--foreground)", borderRadius: 8 } as const;
+function Shell({ children }: { children: React.ReactNode }) {
+  return <main className="center"><div className="card auth-card" style={{ width: "min(480px, 100%)" }}>{children}</div></main>;
+}
 
 export default async function ApprovePage({ searchParams }: { searchParams: Promise<{ t?: string; done?: string; error?: string }> }) {
   const sp = await searchParams;
-  if (sp.done) return <main style={card}><h1>Approved</h1><p>The post is booked. You can close this page.</p></main>;
+  if (sp.done) return <Shell><h1>Approved</h1><p>The post is booked. You can close this page.</p></Shell>;
   const note = sp.error ? MESSAGES[sp.error] ?? MESSAGES.invalid : null;
 
   // Reading only: opening this page (a mail scanner may) books nothing. The button below does.
   const v = verifyApproval(sp.t);
   if (!v.ok) {
-    return <main style={card}><h1>Approval</h1><p>{note ?? (v.reason === "unconfigured" ? "APP_SECRET is not set (32+ characters), so approval links cannot be checked." : MESSAGES[v.reason === "expired" ? "expired" : "invalid"])}</p></main>;
+    return <Shell><h1>Approval</h1><p>{note ?? (v.reason === "unconfigured" ? "APP_SECRET is not set (32+ characters), so approval links cannot be checked." : MESSAGES[v.reason === "expired" ? "expired" : "invalid"])}</p></Shell>;
   }
   let post;
-  try { post = await getStore().getPost(v.approval.postId); } catch { return <main style={card}><h1>Approval</h1><p>{MESSAGES.missing}</p></main>; }
+  try { post = await getStore().getPost(v.approval.postId); } catch { return <Shell><h1>Approval</h1><p>{MESSAGES.missing}</p></Shell>; }
   const tz = (await getStore().getSettings()).tz;
   const open = post.status === "needs_approval" || post.status === "draft";
 
   return (
-    <main style={card}>
+    <Shell>
       <h1>Approve this post?</h1>
-      {note && <p role="alert">{note}</p>}
-      <blockquote style={{ whiteSpace: "pre-wrap", margin: "1rem 0" }}>{post.caption}</blockquote>
-      <p>Platforms: {post.platforms.join(", ") || "none chosen"}</p>
-      <p>Slot: {fmtSlot(v.approval.slotAt, tz)}</p>
+      {note && <p className="msg err" role="alert">{note}</p>}
+      <blockquote>{post.caption}</blockquote>
+      <p className="muted">Platforms: {post.platforms.join(", ") || "none chosen"}</p>
+      <p className="muted num">Slot: {fmtSlot(v.approval.slotAt, tz)}</p>
       {open ? (
-        <form method="post" action="/api/approve" style={{ marginTop: "1rem" }}>
+        <form method="post" action="/api/approve">
           <input type="hidden" name="t" value={sp.t} />
-          <button type="submit">Confirm</button>
+          <button type="submit" className="btn primary" style={{ height: 36, width: "100%" }}>Confirm</button>
         </form>
       ) : <p>{MESSAGES.handled}</p>}
-    </main>
+    </Shell>
   );
 }

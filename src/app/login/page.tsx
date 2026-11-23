@@ -24,16 +24,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ margin: "auto", width: "min(360px, 92vw)", padding: "1.5rem", border: "1px solid var(--foreground)", borderRadius: 8 }}>
-      <h1 style={{ fontSize: "1.25rem", marginBottom: "1rem" }}>Postwise</h1>
-      <form onSubmit={submit} style={{ display: "grid", gap: "0.75rem" }}>
-        <label style={{ display: "grid", gap: "0.25rem" }}>
-          Password
-          <input name="password" type="password" autoComplete="current-password" autoFocus required style={{ padding: "0.5rem", font: "inherit" }} />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={busy} style={{ padding: "0.5rem", font: "inherit" }}>{busy ? "Signing in..." : "Sign in"}</button>
-      </form>
+    <main className="center">
+      <div className="card auth-card">
+        <div className="brand" style={{ padding: 0, fontSize: 18 }}>Post<b>wise</b></div>
+        <form onSubmit={submit} className="stack">
+          <label className="field">
+            <span>Password</span>
+            <input className="input" name="password" type="password" autoComplete="current-password" autoFocus required />
+          </label>
+          {error && <p className="msg err" role="alert">{error}</p>}
+          <button type="submit" className="btn primary" disabled={busy} style={{ height: 36 }}>{busy ? "Signing in..." : "Sign in"}</button>
+        </form>
+      </div>
     </main>
   );
 }
