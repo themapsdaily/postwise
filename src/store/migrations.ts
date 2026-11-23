@@ -53,4 +53,13 @@ CREATE TABLE accounts (
 );
 `,
   },
+  {
+    version: 3,
+    sql: `
+CREATE TABLE settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+`,
+  },
 ];

@@ -9,6 +9,7 @@ import { buildAdapters } from "./adapters";
 import { loadScriptSources, sources as codeSources } from "./sources";
 import { importMedia } from "./store/media";
 import { openStore } from "./store/sqlite";
+import { notifyNeedsApproval } from "./server/review";
 
 const dataDir = path.resolve(process.env.DATA_DIR ?? "./data");
 const tz = process.env.TZ || "UTC";
@@ -41,10 +42,11 @@ async function runSources(now: Date): Promise<string[]> {
       for (const d of drafts) {
         const media = [];
         for (const m of d.media ?? []) media.push({ ...(await importMedia(m.src, dataDir, { allowLocal: true })), alt: m.alt });
-        await store.createPost({
+        const post = await store.createPost({
           caption: d.caption, platforms: d.platforms, perPlatform: d.perPlatform, at: d.at, meta: d.meta,
           source: s.id, media, status: s.autoApprove && d.at ? "approved" : "needs_approval",
         });
+        await notifyNeedsApproval(post, store);
       }
       store.setSourceRun(s.id, now.toISOString(), null);
       notes.push(`source ${s.id}: ${drafts.length} draft(s)`);

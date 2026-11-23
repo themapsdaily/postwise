@@ -8,11 +8,11 @@ import type { Media } from "../core/types";
 const MAX_BYTES = 50 * 1024 * 1024;
 const TIMEOUT_MS = 30_000;
 
-const EXT_MIME: Record<string, string> = {
+export const EXT_MIME: Record<string, string> = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp",
   mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm",
 };
-const MIME_EXT: Record<string, string> = {
+export const MIME_EXT: Record<string, string> = {
   "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp",
   "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm",
 };
@@ -26,7 +26,7 @@ export async function importMedia(src: string, dataDir: string, opts: { allowLoc
   if (!/^https?:\/\//i.test(src) && !opts.allowLocal) throw new Error(`Media must be an http(s) URL: ${src}`);
   let buf: Buffer;
   let mime: string | undefined;
-  let ext = path.extname(src.split(/[?#]/)[0]).slice(1).toLowerCase();
+  const ext = path.extname(src.split(/[?#]/)[0]).slice(1).toLowerCase();
 
   if (/^https?:\/\//i.test(src)) {
     const res = await fetch(src, { signal: AbortSignal.timeout(TIMEOUT_MS) });
@@ -55,8 +55,14 @@ export async function importMedia(src: string, dataDir: string, opts: { allowLoc
 
   if (!mime || !/^(image|video)\//.test(mime)) mime = EXT_MIME[ext];
   if (!mime || !/^(image|video)\//.test(mime)) throw new Error(`Not an image or video: ${src}`);
-  ext = MIME_EXT[mime] ?? (ext || mime.split("/")[1]);
 
+  return saveMediaBuffer(buf, mime, dataDir, ext);
+}
+
+/** Write bytes to `<dataDir>/media/<uuid>.<ext>` and describe them. `mime` must be image/* or video/*. */
+export async function saveMediaBuffer(buf: Buffer, mime: string, dataDir: string, extHint = ""): Promise<Media> {
+  if (!/^(image|video)\//.test(mime)) throw new Error("Not an image or video");
+  const ext = MIME_EXT[mime] ?? (extHint || mime.split("/")[1]);
   const id = randomUUID();
   const rel = path.join("media", `${id}.${ext}`);
   await fs.promises.mkdir(path.join(dataDir, "media"), { recursive: true });

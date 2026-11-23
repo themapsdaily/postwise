@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Store, PostFilter } from "../core/store";
 import type { Account, AccountStore } from "../core/accounts";
+import { defaultSettings, settingsPatchSchema, settingsSchema, type SettingsStore } from "../core/settings";
 import type { Delivery, Post } from "../core/types";
 import { MIGRATIONS } from "./migrations";
 
@@ -69,8 +70,9 @@ const DELIVERY_COLS: Record<string, string> = {
   url: "url", error: "error", retryAt: "retry_at", publishedAt: "published_at",
 };
 
-export type SqliteStore = Store & AccountStore & {
+export type SqliteStore = Store & AccountStore & SettingsStore & {
   close(): void;
+  deleteAccount(platform: Account["platform"]): Promise<void>;
   getSourceRun(id: string): { lastRunAt: string | null; lastError: string | null } | null;
   setSourceRun(id: string, lastRunAt: string | null, error: string | null): void;
 };
@@ -113,6 +115,23 @@ export function openStore(dbPath: string): SqliteStore {
 
   const store: SqliteStore = {
     close: () => { db.close(); },
+
+    async deleteAccount(platform) { db.prepare("DELETE FROM accounts WHERE platform = ?").run(platform); },
+
+    async getSettings() {
+      const out: Record<string, unknown> = { ...defaultSettings() };
+      for (const r of db.prepare("SELECT key, value FROM settings").all() as { key: string; value: string }[]) {
+        try { out[r.key] = JSON.parse(r.value); } catch { /* keep the default */ }
+      }
+      const parsed = settingsSchema.safeParse(out);
+      return parsed.success ? parsed.data : defaultSettings();
+    },
+    async saveSettings(patch) {
+      const clean = settingsPatchSchema.parse(patch);
+      const put = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+      db.transaction(() => { for (const [k, v] of Object.entries(clean)) if (v !== undefined) put.run(k, JSON.stringify(v)); })();
+      return store.getSettings();
+    },
 
     async getAccount(platform) {
       const r = db.prepare("SELECT * FROM accounts WHERE platform = ?").get(platform) as Row | undefined;
