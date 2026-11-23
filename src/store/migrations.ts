@@ -42,4 +42,15 @@ CREATE TABLE source_runs (
 );
 `,
   },
+  {
+    version: 2,
+    sql: `
+CREATE TABLE accounts (
+  platform TEXT PRIMARY KEY,
+  credentials TEXT NOT NULL DEFAULT '{}',
+  expires_at TEXT,
+  updated_at TEXT NOT NULL
+);
+`,
+  },
 ];

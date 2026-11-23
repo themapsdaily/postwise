@@ -1,0 +1,21 @@
+{
+  "id": "fixture-post",
+  "status": "approved",
+  "caption": "New chart is out 📊 Read the full story at https://example.com/story and tell us what you think.",
+  "perPlatform": {},
+  "platforms": ["instagram", "threads", "x", "bluesky", "mastodon"],
+  "media": [
+    {
+      "id": "11111111-2222-3333-4444-555555555555",
+      "kind": "image",
+      "path": "media/11111111-2222-3333-4444-555555555555.jpg",
+      "mime": "image/jpeg",
+      "alt": "A bar chart of monthly rainfall"
+    }
+  ],
+  "slotAt": "2026-11-25T09:00:00.000Z",
+  "source": "manual",
+  "meta": {},
+  "createdAt": "2026-11-24T00:00:00.000Z",
+  "updatedAt": "2026-11-24T00:00:00.000Z"
+}

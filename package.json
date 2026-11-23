@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "dry-run": "tsx src/cli/dry-run.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.2.0",

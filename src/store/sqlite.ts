@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { Store, PostFilter } from "../core/store";
+import type { Account, AccountStore } from "../core/accounts";
 import type { Delivery, Post } from "../core/types";
 import { MIGRATIONS } from "./migrations";
 
@@ -45,6 +46,13 @@ const toDelivery = (r: Row): Delivery => ({
   updatedAt: r.updated_at as string,
 });
 
+const toAccount = (r: Row): Account => ({
+  platform: r.platform as Account["platform"],
+  credentials: JSON.parse(r.credentials as string),
+  expiresAt: (r.expires_at as string | null) ?? null,
+  updatedAt: r.updated_at as string,
+});
+
 const POST_COLS: Record<string, [string, (v: never) => unknown]> = {
   status: ["status", (v) => v],
   caption: ["caption", (v) => v],
@@ -61,7 +69,7 @@ const DELIVERY_COLS: Record<string, string> = {
   url: "url", error: "error", retryAt: "retry_at", publishedAt: "published_at",
 };
 
-export type SqliteStore = Store & {
+export type SqliteStore = Store & AccountStore & {
   close(): void;
   getSourceRun(id: string): { lastRunAt: string | null; lastError: string | null } | null;
   setSourceRun(id: string, lastRunAt: string | null, error: string | null): void;
@@ -105,6 +113,19 @@ export function openStore(dbPath: string): SqliteStore {
 
   const store: SqliteStore = {
     close: () => { db.close(); },
+
+    async getAccount(platform) {
+      const r = db.prepare("SELECT * FROM accounts WHERE platform = ?").get(platform) as Row | undefined;
+      return r ? toAccount(r) : null;
+    },
+    async setAccount(platform, credentials, expiresAt) {
+      db.prepare(`INSERT INTO accounts (platform, credentials, expires_at, updated_at) VALUES (?, ?, ?, ?)
+        ON CONFLICT(platform) DO UPDATE SET credentials = excluded.credentials, expires_at = excluded.expires_at, updated_at = excluded.updated_at`)
+        .run(platform, JSON.stringify(credentials), expiresAt ? iso(expiresAt) : null, new Date().toISOString());
+    },
+    async listAccounts() {
+      return (db.prepare("SELECT * FROM accounts ORDER BY platform").all() as Row[]).map(toAccount);
+    },
 
     async duePosts(now) {
       return (db.prepare("SELECT * FROM posts WHERE status = 'approved' AND slot_at IS NOT NULL AND slot_at <= ? ORDER BY slot_at").all(now.toISOString()) as Row[]).map(toPost);

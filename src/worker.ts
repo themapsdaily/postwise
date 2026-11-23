@@ -4,7 +4,8 @@ import path from "node:path";
 import { CronExpressionParser } from "cron-parser";
 import { runTick } from "./core/engine";
 import type { Source } from "./core/source";
-import { adapters } from "./adapters";
+import { refreshDue } from "./core/accounts";
+import { buildAdapters } from "./adapters";
 import { loadScriptSources, sources as codeSources } from "./sources";
 import { importMedia } from "./store/media";
 import { openStore } from "./store/sqlite";
@@ -57,6 +58,7 @@ async function runSources(now: Date): Promise<string[]> {
 }
 
 let busy = false;
+let lastRefresh = 0;
 async function loop() {
   if (busy) return;
   busy = true;
@@ -64,7 +66,13 @@ async function loop() {
     const now = new Date();
     // A dry run writes nothing, so sources (which create posts) do not run.
     const notes = dryRun ? [] : await runSources(now);
-    const r = await runTick(now, { store, adapters, dryRun });
+    if (!dryRun && now.getTime() - lastRefresh >= 3600_000) {
+      lastRefresh = now.getTime();
+      const rr = await refreshDue(store, now);
+      if (rr.refreshed.length) notes.push(`refreshed tokens: ${rr.refreshed.join(", ")}`);
+      for (const f of rr.failed) notes.push(`token refresh failed: ${f.error}`);
+    }
+    const r = await runTick(now, { store, adapters: await buildAdapters(store), dryRun });
     if (r.claimed.length) notes.push(`claimed ${r.claimed.length}`);
     if (r.changes.length) notes.push(`${r.changes.length} delivery change(s): ${r.changes.map((c) => `${c.platform} ${c.from}->${c.to}`).join(", ")}`);
     for (const e of r.errors) notes.push(`error: ${e}`);

@@ -79,9 +79,12 @@ async function dryTick(now: Date, { store, adapters }: TickDeps): Promise<TickRe
   for (const p of await store.duePosts(now)) {
     for (const platform of p.platforms) {
       const a = adapters[platform];
-      report.previews!.push(a
-        ? { post: p.id, platform, requests: a.plan(draftRow(p, platform), p) }
-        : { post: p.id, platform, reason: "no adapter for this platform" });
+      if (!a) { report.previews!.push({ post: p.id, platform, reason: "no adapter for this platform" }); continue; }
+      try {
+        report.previews!.push({ post: p.id, platform, requests: a.plan(draftRow(p, platform), p) });
+      } catch (e) {
+        report.previews!.push({ post: p.id, platform, reason: errText(e) });
+      }
     }
   }
   return report;
