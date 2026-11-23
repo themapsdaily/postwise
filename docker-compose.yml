@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  worker:
+    build: .
+    env_file: .env
+    command: ["npx", "tsx", "src/worker.ts"]
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - app
+    restart: unless-stopped
