@@ -30,7 +30,7 @@ Each draft in the array is a **DraftInput**:
 | `at` | string (ISO 8601 time) | no | When to post, e.g. `"2026-12-01T09:00:00Z"`. Without it the draft gets the next free slot when approved. |
 | `meta` | object | no | Anything you want to keep with the post (ids, links). Never sent to a platform. |
 
-The worker checks the output against this shape. A bad shape fails the whole run with a message in the worker log.
+The worker checks the output against this shape. A bad shape fails the whole run with a message in the worker log. If one draft's media cannot be fetched or read, only that draft is skipped (the log says which); the others are added.
 
 ## sources.yaml
 

@@ -47,9 +47,18 @@ async function runSources(now: Date): Promise<string[]> {
     try {
       const drafts = await s.run({ now, log, lastRunAt: prev?.lastRunAt ?? null });
       const settings = await store.getSettings();
-      for (const d of drafts) {
+      let made = 0;
+      for (const [i, d] of drafts.entries()) {
+        // One draft with bad media is skipped and reported; the rest still land, so
+        // the run counts as done and the next run does not make them again.
         const media = [];
-        for (const m of d.media ?? []) media.push({ ...(await importMedia(m.src, dataDir, { allowLocal: true })), alt: m.alt });
+        try {
+          for (const m of d.media ?? []) media.push({ ...(await importMedia(m.src, dataDir, { allowLocal: true })), alt: m.alt });
+        } catch (e) {
+          notes.push(`source ${s.id}: draft ${i + 1} skipped: ${(e as Error).message}`);
+          continue;
+        }
+        made++;
         let post = await store.createPost({
           caption: d.caption, platforms: d.platforms?.length ? d.platforms : settings.defaultPlatforms,
           perPlatform: d.perPlatform, at: d.at, meta: d.meta, source: s.id, media, status: "needs_approval",
@@ -62,7 +71,7 @@ async function runSources(now: Date): Promise<string[]> {
         }
       }
       store.setSourceRun(s.id, now.toISOString(), null);
-      notes.push(`source ${s.id}: ${drafts.length} draft(s)`);
+      notes.push(`source ${s.id}: ${made} of ${drafts.length} draft(s) added`);
     } catch (e) {
       // Keep the last success as SINCE (nothing is skipped); lastTried makes a
       // broken source retry on its next cron time, not every minute.
