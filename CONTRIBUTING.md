@@ -7,7 +7,7 @@ Thanks for helping. Postwise is small on purpose: keep changes small and tested.
 You need Node.js 24 and npm.
 
 ```bash
-git clone <repo-url> postwise
+git clone https://github.com/themapsdaily/postwise.git
 cd postwise
 npm install
 cp .env.example .env     # set ADMIN_PASSWORD and APP_SECRET (openssl rand -hex 32)

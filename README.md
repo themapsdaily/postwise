@@ -22,7 +22,7 @@ machine or server. You own your data and your API keys. There is nothing to pay 
 You need Docker with Compose.
 
 ```bash
-git clone <your-fork-or-this-repo-url> postwise
+git clone https://github.com/themapsdaily/postwise.git
 cd postwise
 cp .env.example .env
 ```
