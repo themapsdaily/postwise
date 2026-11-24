@@ -102,3 +102,20 @@ test("loadScriptSources runs commands and rejects bad output", async () => {
   await assert.rejects(() => bad.run(ctx), /not JSON/);
   assert.deepEqual(loadScriptSources(path.join(tmp(), "none.yaml")), []);
 });
+
+test("script env: no app secrets, SINCE passed through", async () => {
+  const { scriptEnv } = await import("../src/sources");
+  process.env.APP_SECRET = "s".repeat(40); process.env.ADMIN_PASSWORD = "pw"; process.env.WEBHOOK_TOKEN = "t"; process.env.SMTP_URL = "smtps://a:b@c";
+  const env = scriptEnv({ SINCE: "2026-11-24T00:00:00.000Z" });
+  for (const k of ["APP_SECRET", "ADMIN_PASSWORD", "WEBHOOK_TOKEN", "SMTP_URL"]) assert.equal(env[k], undefined, k);
+  assert.equal(env.SINCE, "2026-11-24T00:00:00.000Z");
+  assert.ok(env.PATH);
+});
+
+test("threads: the check counts emoji the way the adapter does", async () => {
+  const { countFor } = await import("../src/checks/length");
+  const { threadsLength } = await import("../src/adapters/threads");
+  const text = "a".repeat(490) + "😀😀"; // 490 + 2x4 bytes = 498
+  assert.equal(countFor("threads", text), threadsLength(text));
+  assert.equal(countFor("threads", "a".repeat(495) + "😀😀"), 503);
+});

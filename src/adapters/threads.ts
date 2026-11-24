@@ -14,17 +14,11 @@ import { mediaUrl } from "../core/media";
 import type { Delivery, Media, Post } from "../core/types";
 import { graph, THREADS_GRAPH } from "./graph";
 import { credentials } from "./util";
+import { THREADS_MAX, threadsLength } from "./threadsText";
 
-export const THREADS_MAX = 500;
+export { THREADS_MAX, threadsLength };
+
 const CAROUSEL_MAX = 20;
-const PICTO = /\p{Extended_Pictographic}/u;
-
-/** Length the way Threads counts it: an emoji counts as its UTF-8 bytes, anything else as 1. */
-export function threadsLength(s: string): number {
-  let n = 0;
-  for (const ch of s) n += PICTO.test(ch) ? new TextEncoder().encode(ch).length : 1;
-  return n;
-}
 
 function problem(post: Post, text: string): string | null {
   if (!post.media.length && !text.trim()) return "Threads needs text or media";

@@ -4,6 +4,7 @@ import { textFor } from "../core/adapter";
 import type { Check, CheckResult } from "../core/check";
 import type { Platform } from "../core/types";
 import { xLength } from "../adapters/xText";
+import { threadsLength } from "../adapters/threadsText";
 
 const LIMITS: Record<Platform, number> = { instagram: 2200, threads: 500, x: 280, bluesky: 300, mastodon: 500 };
 const URL_RE = /https?:\/\/[^\s]+/gi;
@@ -19,6 +20,7 @@ export const limitsFor = (platform: Platform): number => LIMITS[platform];
 export function countFor(platform: Platform, text: string): number {
   switch (platform) {
     case "x": return xLength(text);
+    case "threads": return threadsLength(text);
     case "bluesky": return graphemeCount(text);
     case "mastodon": return Array.from(text.replace(URL_RE, "x".repeat(MASTODON_URL_LENGTH))).length;
     default: return Array.from(text).length;

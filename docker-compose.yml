@@ -14,6 +14,9 @@ services:
     command: ["npx", "tsx", "src/worker.ts"]
     volumes:
       - ./data:/app/data
+      # Script sources (docs/writing-a-source.md): the image does not contain these.
+      # - ./sources.yaml:/app/sources.yaml:ro
+      # - ./examples:/app/examples:ro
     depends_on:
       - app
     restart: unless-stopped

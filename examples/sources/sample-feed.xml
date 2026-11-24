@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Example Blog</title>
+    <link>https://example.com/</link>
+    <description>A small sample feed for trying Postwise sources.</description>
+    <item>
+      <title>Rainfall hit a ten year high</title>
+      <link>https://example.com/rainfall</link>
+      <pubDate>Mon, 23 Nov 2026 08:00:00 GMT</pubDate>
+      <enclosure url="https://example.com/images/rain.jpg" type="image/jpeg" length="12345"/>
+    </item>
+    <item>
+      <title><![CDATA[Cats & dogs: a data story]]></title>
+      <link>https://example.com/pets</link>
+      <pubDate>Sun, 22 Nov 2026 17:30:00 GMT</pubDate>
+      <media:content url="https://example.com/images/pets.png" medium="image"/>
+    </item>
+    <item>
+      <title>An older post</title>
+      <link>https://example.com/old</link>
+      <pubDate>Fri, 01 Jan 2021 09:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

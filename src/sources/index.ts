@@ -33,9 +33,19 @@ const Entry = z.object({
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
-function runCommand(command: string, timeoutS: number): Promise<string> {
+/** Env vars a script never sees: the app's own secrets. */
+const SECRET_ENV = ["ADMIN_PASSWORD", "APP_SECRET", "WEBHOOK_TOKEN", "SMTP_URL"];
+
+/** The worker's environment minus its secrets, plus what the script needs to know. */
+export function scriptEnv(extra: Record<string, string>): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, ...extra };
+  for (const k of SECRET_ENV) delete env[k];
+  return env;
+}
+
+function runCommand(command: string, timeoutS: number, env: NodeJS.ProcessEnv): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, { shell: true, cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, { shell: true, cwd: REPO_ROOT, env, stdio: ["ignore", "pipe", "pipe"] });
     let out = "";
     let err = "";
     let timedOut = false;
@@ -62,8 +72,10 @@ export function loadScriptSources(file: string): Source[] {
     id: e.id,
     schedule: e.schedule,
     autoApprove: e.autoApprove,
-    async run(): Promise<DraftInput[]> {
-      const out = await runCommand(e.command, e.timeoutSeconds ?? 120);
+    async run(ctx): Promise<DraftInput[]> {
+      // SINCE: when this source last ran, so a script can fetch only what is new.
+      const env = scriptEnv({ POSTWISE_SOURCE_ID: e.id, ...(ctx.lastRunAt ? { SINCE: ctx.lastRunAt } : {}) });
+      const out = await runCommand(e.command, e.timeoutSeconds ?? 120, env);
       let json: unknown;
       try { json = JSON.parse(out); } catch { throw new Error(`Source ${e.id}: stdout is not JSON: ${out.slice(0, 200)}`); }
       const r = z.array(Draft).safeParse(json);

@@ -1,9 +1,21 @@
-# Script sources. Copy to sources.yaml. Each command runs on its cron (in TZ)
-# from the repo root and prints a JSON array of drafts to stdout, e.g.
+# Script sources. Copy to sources.yaml (next to package.json). Each command runs
+# on its cron (in TZ) from the repo root and prints a JSON array of drafts to
+# stdout, e.g.
 # [{"caption": "Hello", "media": [{"src": "https://example.com/a.png"}], "at": "2026-12-01T09:00:00Z"}]
+# See docs/writing-a-source.md.
 #
-# - id: daily-quote
-#   schedule: "0 8 * * *"
-#   command: node examples/sources/quote.mjs
-#   autoApprove: false        # true books a post straight away, only when the draft has "at"
-#   timeoutSeconds: 120
+# Fields: id, schedule (cron), command, autoApprove (optional), timeoutSeconds (optional, default 120).
+
+# Post new items from a blog feed. Reads FEED_URL and PLATFORMS from the environment.
+- id: blog-feed
+  schedule: "0 8 * * *"
+  command: FEED_URL=https://example.com/feed.xml PLATFORMS=bluesky,mastodon node examples/sources/rss-to-drafts.mjs
+  # autoApprove: false      # true books a post straight away when the draft has "at" and passes the checks
+  # timeoutSeconds: 120
+
+# Queue posts from a spreadsheet export. Needs python3 on the machine running the worker.
+- id: csv-queue
+  schedule: "0 7 * * 1"
+  command: TZ=Europe/London python3 examples/sources/csv-to-drafts.py examples/sources/posts.csv
+  # autoApprove: true
+  # timeoutSeconds: 60

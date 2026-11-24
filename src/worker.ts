@@ -10,6 +10,8 @@ import { loadScriptSources, sources as codeSources } from "./sources";
 import { importMedia } from "./store/media";
 import { openStore } from "./store/sqlite";
 import { notifyNeedsApproval } from "./server/review";
+import { blocks, runChecks } from "./core/check";
+import { checks } from "./checks";
 
 const dataDir = path.resolve(process.env.DATA_DIR ?? "./data");
 const tz = process.env.TZ || "UTC";
@@ -25,34 +27,46 @@ function fired(cron: string, since: Date, now: Date): boolean {
   return next.getTime() <= now.getTime();
 }
 
+// When each source was last tried (success or not). The cron is measured from
+// this; `lastRunAt` in the database is the last success, which scripts get as SINCE.
+const lastTried = new Map<string, number>();
+
 async function runSources(now: Date): Promise<string[]> {
   const notes: string[] = [];
   for (const s of sources) {
     if (!s.schedule) continue;
     const prev = store.getSourceRun(s.id);
-    const since = prev?.lastRunAt ? new Date(prev.lastRunAt) : started;
+    const since = new Date(Math.max(started.getTime(), lastTried.get(s.id) ?? 0, prev?.lastRunAt ? Date.parse(prev.lastRunAt) : 0));
     try {
       if (!fired(s.schedule, since, now)) continue;
     } catch (e) {
       notes.push(`source ${s.id}: bad schedule: ${(e as Error).message}`);
       continue;
     }
+    lastTried.set(s.id, now.getTime());
     try {
       const drafts = await s.run({ now, log, lastRunAt: prev?.lastRunAt ?? null });
+      const settings = await store.getSettings();
       for (const d of drafts) {
         const media = [];
         for (const m of d.media ?? []) media.push({ ...(await importMedia(m.src, dataDir, { allowLocal: true })), alt: m.alt });
-        const post = await store.createPost({
-          caption: d.caption, platforms: d.platforms, perPlatform: d.perPlatform, at: d.at, meta: d.meta,
-          source: s.id, media, status: s.autoApprove && d.at ? "approved" : "needs_approval",
+        let post = await store.createPost({
+          caption: d.caption, platforms: d.platforms?.length ? d.platforms : settings.defaultPlatforms,
+          perPlatform: d.perPlatform, at: d.at, meta: d.meta, source: s.id, media, status: "needs_approval",
         });
-        await notifyNeedsApproval(post, store);
+        // Auto-approve only a post with a time that passes every check; anything else waits for a person.
+        if (s.autoApprove && post.slotAt && !blocks(runChecks(post, checks))) {
+          post = await store.updatePost(post.id, { status: "approved" });
+        } else {
+          await notifyNeedsApproval(post, store);
+        }
       }
       store.setSourceRun(s.id, now.toISOString(), null);
       notes.push(`source ${s.id}: ${drafts.length} draft(s)`);
     } catch (e) {
-      // Record the run so a broken source retries on its next cron time, not every minute.
-      store.setSourceRun(s.id, now.toISOString(), (e as Error).message.slice(0, 500));
+      // Keep the last success as SINCE (nothing is skipped); lastTried makes a
+      // broken source retry on its next cron time, not every minute.
+      store.setSourceRun(s.id, prev?.lastRunAt ?? null, (e as Error).message.slice(0, 500));
       notes.push(`source ${s.id} failed: ${(e as Error).message}`);
     }
   }
