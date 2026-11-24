@@ -74,4 +74,10 @@ export interface DraftInput {
   /** Wanted time (ISO); omitted = next free slot. */
   at?: string;
   meta?: Record<string, unknown>;
+  /**
+   * Optional stable id from your data (a feed item's guid, a row id). A draft
+   * whose key this source has already sent is skipped, so a source can resend
+   * everything each run without making duplicates.
+   */
+  key?: string;
 }

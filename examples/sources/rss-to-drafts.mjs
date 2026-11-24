@@ -96,6 +96,8 @@ const drafts = items
     ...(platforms.length ? { platforms } : {}),
     ...(i.image ? { media: [{ src: i.image }] } : {}),
     meta: { link: i.link, published: i.date.toISOString() },
+    // key: the item's link (or title + date), so an item is posted once however often the feed is read.
+    key: (i.link || `${i.title}|${i.date.toISOString()}`).slice(0, 200),
   }));
 
 console.log(JSON.stringify(drafts, null, 2));

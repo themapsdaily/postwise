@@ -35,8 +35,10 @@ export async function POST(req: Request) {
 
     const created = [];
     for (const [i, d] of drafts.entries()) {
+      const known = d.key ? await store.postByKey("webhook", d.key) : null;
+      if (known) { created.push(known); continue; }
       let post = await store.createPost({
-        caption: d.caption, perPlatform: d.perPlatform, at: d.at, meta: d.meta, source: "webhook",
+        key: d.key, caption: d.caption, perPlatform: d.perPlatform, at: d.at, meta: d.meta, source: "webhook",
         platforms: d.platforms ?? settings.defaultPlatforms, media: imported[i], status: "needs_approval",
       });
       if (settings.approval === "auto" && !blocks(checkPost(post))) {

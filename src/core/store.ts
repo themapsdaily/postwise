@@ -37,5 +37,7 @@ export interface Store extends EngineStore {
   /** Make a draft. Media is already imported (paths under DATA_DIR). */
   createPost(input: Omit<DraftInput, "media"> & { source: string; status?: PostStatus; media?: Post["media"] }): Promise<Post>;
   listPosts(filter?: PostFilter): Promise<Post[]>;
+  /** The post this source already made from a draft with this `key`, if any. */
+  postByKey(source: string, key: string): Promise<Post | null>;
   deletePost(id: string): Promise<void>;
 }

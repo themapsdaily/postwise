@@ -48,9 +48,11 @@ async function runSources(now: Date): Promise<string[]> {
       const drafts = await s.run({ now, log, lastRunAt: prev?.lastRunAt ?? null });
       const settings = await store.getSettings();
       let made = 0;
+      let dupes = 0;
       for (const [i, d] of drafts.entries()) {
         // One draft with bad media is skipped and reported; the rest still land, so
         // the run counts as done and the next run does not make them again.
+        if (d.key && (await store.postByKey(s.id, d.key))) { dupes++; continue; }
         const media = [];
         try {
           for (const m of d.media ?? []) media.push({ ...(await importMedia(m.src, dataDir, { allowLocal: true })), alt: m.alt });
@@ -60,7 +62,7 @@ async function runSources(now: Date): Promise<string[]> {
         }
         made++;
         let post = await store.createPost({
-          caption: d.caption, platforms: d.platforms?.length ? d.platforms : settings.defaultPlatforms,
+          key: d.key, caption: d.caption, platforms: d.platforms?.length ? d.platforms : settings.defaultPlatforms,
           perPlatform: d.perPlatform, at: d.at, meta: d.meta, source: s.id, media, status: "needs_approval",
         });
         // Auto-approve only a post with a time that passes every check; anything else waits for a person.
@@ -71,7 +73,7 @@ async function runSources(now: Date): Promise<string[]> {
         }
       }
       store.setSourceRun(s.id, now.toISOString(), null);
-      notes.push(`source ${s.id}: ${made} of ${drafts.length} draft(s) added`);
+      if (made || drafts.length - dupes) notes.push(`source ${s.id}: ${made} of ${drafts.length - dupes} new draft(s) added${dupes ? `, ${dupes} already sent` : ""}`);
     } catch (e) {
       // Keep the last success as SINCE (nothing is skipped); lastTried makes a
       // broken source retry on its next cron time, not every minute.

@@ -24,6 +24,7 @@ Each draft in the array is a **DraftInput**:
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `caption` | string | yes | The post text. Used on every platform unless `perPlatform` overrides it. |
+| `key` | string (1 to 200 chars) | no | A stable id from your data, such as a feed item's link or a row id. A draft whose key this source has already sent is skipped, so your script can print everything each run without making duplicates. |
 | `platforms` | array of `"instagram"`, `"threads"`, `"x"`, `"bluesky"`, `"mastodon"` | no | Where to post. With no platforms, the draft gets the default platforms from Settings. |
 | `perPlatform` | object, platform name to string | no | Replaces `caption` on that platform, e.g. `{"x": "Short version"}`. |
 | `media` | array of `{ "src": string, "alt"?: string }` | no | `src` is an `http(s)` URL or a local file path (scripts only, not the webhook). The worker copies the file into `data/media/`. JPEG, PNG, GIF, WebP, MP4, MOV, WebM, up to 50 MB each. `alt` is the alt text. |

@@ -15,6 +15,7 @@ Local media paths only work for script sources run by the worker, not for the we
 """
 
 import csv
+import hashlib
 import json
 import os
 import sys
@@ -65,7 +66,8 @@ def main():
             bad = [p for p in platforms if p not in PLATFORMS]
             if bad:
                 die(f"Line {n}: unknown platform {bad[0]!r}")
-            draft = {"caption": caption}
+            # key: a stable id per row, so re-running on the same file adds nothing new.
+            draft = {"caption": caption, "key": hashlib.sha1(f"{caption}|{row.get('at') or ''}".encode()).hexdigest()[:16]}
             if platforms:
                 draft["platforms"] = platforms
             if (row.get("at") or "").strip():

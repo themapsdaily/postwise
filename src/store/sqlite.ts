@@ -204,11 +204,11 @@ export function openStore(dbPath: string): SqliteStore {
     async createPost(input) {
       const id = randomUUID();
       const now = new Date().toISOString();
-      db.prepare(`INSERT INTO posts (id, status, caption, per_platform, platforms, media, slot_at, source, meta, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      db.prepare(`INSERT INTO posts (id, status, caption, per_platform, platforms, media, slot_at, source, meta, created_at, updated_at, dedupe_key)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
         id, input.status ?? "needs_approval", input.caption,
         JSON.stringify(input.perPlatform ?? {}), JSON.stringify(input.platforms ?? []), JSON.stringify(input.media ?? []),
-        input.at ? iso(input.at) : null, input.source, JSON.stringify(input.meta ?? {}), now, now,
+        input.at ? iso(input.at) : null, input.source, JSON.stringify(input.meta ?? {}), now, now, input.key ?? null,
       );
       return getRow(id);
     },
@@ -222,6 +222,10 @@ export function openStore(dbPath: string): SqliteStore {
         " ORDER BY (slot_at IS NULL), slot_at, created_at";
       if (f.limit) { sql += " LIMIT ?"; vals.push(f.limit); }
       return (db.prepare(sql).all(...vals) as Row[]).map(toPost);
+    },
+    async postByKey(source, key) {
+      const r = db.prepare("SELECT * FROM posts WHERE source = ? AND dedupe_key = ?").get(source, key) as Row | undefined;
+      return r ? toPost(r) : null;
     },
     async deletePost(id) { db.prepare("DELETE FROM posts WHERE id = ?").run(id); },
 

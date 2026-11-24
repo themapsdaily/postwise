@@ -59,6 +59,7 @@ export const draftInputSchema = z.object({
   media: z.array(z.object({ src: z.string().min(1).max(2000), alt: z.string().max(1500).optional() })).max(20).optional(),
   at: isoSchema.optional(),
   meta: z.record(z.string(), z.unknown()).optional(),
+  key: z.string().min(1).max(200).optional(),
 });
 export const draftsBodySchema = z.union([draftInputSchema, z.array(draftInputSchema).min(1).max(50)]);
 

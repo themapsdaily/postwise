@@ -119,3 +119,16 @@ test("threads: the check counts emoji the way the adapter does", async () => {
   assert.equal(countFor("threads", text), threadsLength(text));
   assert.equal(countFor("threads", "a".repeat(495) + "😀😀"), 503);
 });
+
+test("draft key: a second draft with the same key from the same source is found, other sources are not", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pw-key-"));
+  const { openStore } = await import("../src/store/sqlite");
+  const st = openStore(path.join(dir, "k.db"));
+  await st.createPost({ caption: "a", source: "rss", key: "https://x/1" });
+  assert.ok(await st.postByKey("rss", "https://x/1"));
+  assert.equal(await st.postByKey("csv", "https://x/1"), null);
+  await assert.rejects(st.createPost({ caption: "b", source: "rss", key: "https://x/1" }));
+  await st.createPost({ caption: "c", source: "rss" });
+  await st.createPost({ caption: "d", source: "rss" }); // no key: never deduped
+  st.close();
+});

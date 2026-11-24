@@ -21,6 +21,7 @@ const Draft = z.object({
   media: z.array(z.object({ src: z.string(), alt: z.string().optional() })).optional(),
   at: z.string().optional(),
   meta: z.record(z.string(), z.unknown()).optional(),
+  key: z.string().min(1).max(200).optional(),
 });
 
 const Entry = z.object({

@@ -62,4 +62,11 @@ CREATE TABLE settings (
 );
 `,
   },
+  {
+    version: 4,
+    sql: `
+ALTER TABLE posts ADD COLUMN dedupe_key TEXT;
+CREATE UNIQUE INDEX posts_source_key ON posts(source, dedupe_key) WHERE dedupe_key IS NOT NULL;
+`,
+  },
 ];
